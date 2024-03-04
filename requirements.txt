@@ -1,0 +1,4 @@
+pymodbus
+minimalmodbus
+python-dotenv
+requests
