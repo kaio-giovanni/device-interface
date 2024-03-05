@@ -1,4 +1,4 @@
-# Finder Interface
+# Device Interface Modbus
 
 This project is a poc demo of using Modbus RTU to connect devices. To test it, you can use two or more devices.  
 In this project, I am using a raspberry pi 3b+ as a modbus slave client, to receive data from a HMI (Human-Machine interface) modbus master client.
