@@ -18,10 +18,12 @@ After the modbus master client sends a request to write data into the registers,
 sudo raspi-config
 ```
 
-- Install the package installer for python (PIP) and the following library:
-    - PIP
-    - virtualenv
+- Install the virtualenv library using the package installer for python (PIP):
 
+```bash
+
+pip install -r virtualenv
+```
 
 - Run the following command to create a Python Virtual Environment to install packages. This command will create
   a folder named as '.venv' with all required libraries to run the project.
@@ -47,7 +49,7 @@ source .venv/bin/activate
 pip install --require-virtualenv -r ./requirements.txt
 ```
 
-- Create a env file in the root folder and set the env variables according to the [env example](.env.example)
+- Create a .env file in the root folder and set the env variables according to the [env example](.env.example)
 
 - All project logs will be stored in the [logfile](./application.log) .To watch a .log file in real time, run the command bellow:
 
