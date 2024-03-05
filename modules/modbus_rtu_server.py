@@ -32,10 +32,10 @@ class ModbusRtuServer:
         })
         self.server = None
 
-    def send_data_to_api(self, address, values):
+    async def send_data_to_api(self, address, values):
         api_endpoint = os.environ['HOST_API_ENDPOINT']
         req = HttpRequests(api_endpoint)
-        req.sendData(address, values)
+        await req.sendData(address, values)
 
     def start_serial_server(self):
         queue = asyncio.Queue()

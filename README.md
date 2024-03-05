@@ -1,8 +1,6 @@
 # Finder Interface
 
-This project is a poc demo of using Modbus RTU to connect devices. To test it, you can use two or more devices.  
-In this project, I am using a raspberry pi 3b+ as a modbus slave client, to receive data from a HMI (Human-Machine interface) modbus master client.
-After the modbus master client sends a request to write data into the registers, the modbus slave client will get these data and send to a external API for further processing.
+This is a POC demo project using Modbus RTU to connect devices (Raspberry PI and HMI - 110ws Delta).
 
 
 ### Dependecies
@@ -18,10 +16,12 @@ After the modbus master client sends a request to write data into the registers,
 sudo raspi-config
 ```
 
-- Install the package installer for python (PIP) and the following library:
-    - PIP
-    - virtualenv
+- Install the virtualenv library using the package installer for python (PIP):
 
+```bash
+
+pip install -r virtualenv
+```
 
 - Run the following command to create a Python Virtual Environment to install packages. This command will create
   a folder named as '.venv' with all required libraries to run the project.
@@ -47,7 +47,7 @@ source .venv/bin/activate
 pip install --require-virtualenv -r ./requirements.txt
 ```
 
-- Create a env file in the root folder and set the env variables according to the [env example](.env.example)
+- Create a .env file in the root folder and set the env variables according to the [env example](.env.example)
 
 - All project logs will be stored in the [logfile](./application.log) .To watch a .log file in real time, run the command bellow:
 
@@ -71,7 +71,7 @@ type -wait [path/to/logfile.log]
 | 4	            | Read Input Registers             |
 | 5	            | Write Single Coil                |
 | 6	            | Write Single Holding Register    |
-| 15	           | Write Multiple Coils             |
+| 15	           |  Write Multiple Coils            |
 | 16	           | Write Multiple Holding Registers |
 
 ### How to run
