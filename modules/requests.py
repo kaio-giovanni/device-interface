@@ -17,6 +17,5 @@ class HttpRequests:
         }
         try:
             await asyncio.to_thread(requests.post, self.base_url, json = data)
-            self.logger.debug(f"The data with the payload {data} has been sent successfully!!")
         except Exception as exc:
             self.logger.error(f"Error trying to send data {data} to endpoint {self.base_url} - {exc}")

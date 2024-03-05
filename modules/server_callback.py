@@ -5,6 +5,9 @@ from pymodbus.datastore import (
     ModbusSequentialDataBlock
 )
 
+from .utils import Utils
+
+
 class CallbackDataBlock(ModbusSequentialDataBlock):
 
     def __init__(self, queue, addr, values, callback_function):
@@ -18,15 +21,12 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         super().setValues(address, values)
         self.logger.debug(f"Callback from setValues with address {address}, values {values}")
 
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
+        loop = Utils.get_event_loop()
 
         if loop and loop.is_running():
             task = loop.create_task(self.callback_function(address, values))
             task.add_done_callback(
-                lambda t: self.logger.debug(f"The data was sent successfully!!")
+                lambda t: self.logger.debug(f"Callback function finished with result: {t}")
             )
         else:
             self.logger.debug("Starting a new event loop")
@@ -41,3 +41,4 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         is_valid = super().validate(address, count=count)
         self.logger.debug(f"Callback from validate with address {address}, count {count}, data {is_valid}")
         return is_valid
+
