@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 
 from pymodbus.datastore import (
@@ -13,6 +12,7 @@ from pymodbus.transaction import ModbusRtuFramer
 from .requests import HttpRequests
 from .server_callback import CallbackDataBlock
 
+
 class ModbusRtuServer:
     def __init__(self, port: str, baudrate=9600, num_registers=100, parity='N', bytesize=8, stopbits=1):
         self.port = port
@@ -21,13 +21,12 @@ class ModbusRtuServer:
         self.parity = parity
         self.bytesize = bytesize
         self.stopbits = stopbits
-        self.logger = logging.getLogger(__name__)
         self.server_identity = ModbusDeviceIdentification(info_name={
-            "VendorName": "Raspberry Foundation",
-            "ProductCode": "Raspberry PI 3b+",
-            "VendorUrl": "https://raspberry.org",
-            "ProductName": 'Raspberry PI',
-            "ModelName": 'Raspberry PI 3b+',
+            "VendorName": "Revolution PI",
+            "ProductCode": "RevPi Connect SE",
+            "VendorUrl": "https://revolutionpi.com/shop/en/revpi-connect-se",
+            "ProductName": 'RevPi Connect SE',
+            "ModelName": 'RevPi Connect SE',
             "MajorMinorRevision": '1.0.0',
         })
         self.server = None
