@@ -11,5 +11,5 @@ class Utils:
             return None
 
     @staticmethod
-    def data_ready_to_be_sent(self, values) -> bool:
-        return isinstance(values, list) and values.count() >= 8 and values[0] == 1
+    def data_ready_to_be_sent(values) -> bool:
+        return isinstance(values, list) and len(values) >= 8 and values[0] == 1

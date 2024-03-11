@@ -39,7 +39,6 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         self.logger.info(f"Callback from getValues with address {address}, count {count}, data {feedback}")
         return feedback
 
-
     def validate(self, address, count=1):
         is_valid = super().validate(address, count=count)
         self.logger.info(f"Callback from validate with address {address}, count {count}, data {is_valid}")
@@ -50,7 +49,7 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         if r.done() and r.result() != None:
             # dados salvos na api
             CallbackDataBlock.http_request_success = True
-        elif r.done() and r.result() == None:
+        else:
             # A API retornou um erro ao tentar salvar os dados
             CallbackDataBlock.http_request_success = False
 

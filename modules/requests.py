@@ -7,6 +7,7 @@ from pymodbus.payload import BinaryPayloadDecoder
 
 
 class HttpRequests:
+
     def __init__(self, base_url):
         self.base_url = base_url
         self.logger = logging.getLogger(__name__)
@@ -34,10 +35,8 @@ class HttpRequests:
         }
 
     def decode_batch_value(self, data):
-        return (BinaryPayloadDecoder.fromRegisters(data,
-                                                   Endian.Big,
-                                                   Endian.Little)
-                .decode_string())
+        decoder = BinaryPayloadDecoder.fromRegisters(data, Endian.Big, Endian.Big)
+        return decoder.decode_string()
 
 
 """
