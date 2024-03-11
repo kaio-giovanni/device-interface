@@ -11,12 +11,14 @@ logging.basicConfig(filename='application.log',
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 if __name__ == '__main__':
-    logging.debug('Runnning project...')
+    logging.info('Initializing the project...')
 
     load_dotenv()
     port = os.environ['MODBUS_SERVER_PORT']
-    baudrate = os.environ['BAUDRATE']
-    num_registers = os.environ['NUM_REGISTERS']
+    baudrate = int(os.environ['BAUDRATE'])
+    num_registers = int(os.environ['NUM_REGISTERS'])
 
-    modbusClient = ModbusRtuServer(port=port, baudrate=baudrate, num_registers=num_registers)
+    modbusClient = ModbusRtuServer(port=port,
+                                   baudrate=baudrate,
+                                   num_registers=num_registers)
     modbusClient.main()

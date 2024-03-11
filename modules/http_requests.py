@@ -14,13 +14,15 @@ class HttpRequests:
         self.logger.setLevel(logging.INFO)
         self.logger.info(f"Using the API Url: {base_url}")
 
-    async def sendData(self, address, values):
-        try:
-            data = self.build_request(address, values)
-            self.logger.info(f"Trying to send the JSON {data} to endpoint {self.base_url}")
-            await asyncio.to_thread(requests.post, self.base_url, json=data)
-        except Exception as exc:
-            self.logger.error(f"Error trying to send data {data} to endpoint {self.base_url} - {exc}")
+    async def sendData(self, address, values) -> bool:
+        data = self.build_request(address, values)
+        http_response = await asyncio.to_thread(requests.post, self.base_url, json=data)
+        if http_response.ok:
+            self.logger.info(f"The JSON: {data} was successfully sent to the endpoint: {self.base_url}")
+            return True
+        else:
+            self.logger.error(f"The API returned an error message when trying to send the json: {data} to endpoint {self.base_url}")
+            raise requests.exceptions.HTTPError
 
     def build_request(self, address, values):
         batch_value = self.decode_batch_value(values[6])

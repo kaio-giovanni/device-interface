@@ -25,19 +25,22 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
     def getValues(self, address, count=1):
         response = super().getValues(address, count=count)
 
-        if Utils.data_ready_to_be_sent(response):
-            loop = Utils.get_event_loop()
+        try:
+            if Utils.data_ready_to_be_sent(response):
+                loop = Utils.get_event_loop()
 
-            if loop and loop.is_running():
-                task = loop.create_task(self.callback_function(address, response))
-                task.add_done_callback(self.done_callback)
-            else:
-                self.logger.info("Starting a new event loop")
-                asyncio.run(self.callback_function(address, values))
+                if loop and loop.is_running():
+                    task = loop.create_task(self.callback_function(address, response))
+                    task.add_done_callback(self.done_callback)
+                else:
+                    self.logger.info("Starting a new event loop")
+                    asyncio.run(self.callback_function(address, values))
 
-        feedback = self.return_feedback(response)
-        self.logger.info(f"Callback from getValues with address {address}, count {count}, data {feedback}")
-        return feedback
+            return self.return_feedback(response)
+        except Exception as exc:
+            self.logger.error(f"Error while trying to process data from registers. {exc}")
+            response[0] = -1
+            return response
 
     def validate(self, address, count=1):
         is_valid = super().validate(address, count=count)
@@ -46,7 +49,7 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
 
     def done_callback(self, r):
         self.logger.info(f"HTTP request result: {r.result()}")
-        if r.done() and r.result() != None:
+        if r.done() and r.result() == True:
             # dados salvos na api
             CallbackDataBlock.http_request_success = True
         else:
@@ -54,18 +57,15 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
             CallbackDataBlock.http_request_success = False
 
     def return_feedback(self, response):
-        try:
-            if len(response) >= 8 and \
-                    CallbackDataBlock.http_request_success != None and \
-                    CallbackDataBlock.http_request_success == True:
-                response[0] = 1  # sinalizador de que os dados foram salvos corretamente
-                CallbackDataBlock.http_request_success = None
-            elif len(response) >= 8 and \
-                    CallbackDataBlock.http_request_success != None and \
-                    CallbackDataBlock.http_request_success == False:
-                response[0] = -1  # sinalizador de que os dados não foram salvos corretamente
-                CallbackDataBlock.http_request_success = None
-        except Exception as exc:
-            self.logger.error("Error when trying to return HTTP request result feedback to Modbus Client")
+        if len(response) >= 8 and \
+                CallbackDataBlock.http_request_success != None and \
+                CallbackDataBlock.http_request_success == True:
+            response[0] = 1  # sinalizador de que os dados foram salvos corretamente
+            CallbackDataBlock.http_request_success = None
+        elif len(response) >= 8 and \
+                CallbackDataBlock.http_request_success != None and \
+                CallbackDataBlock.http_request_success == False:
+            response[0] = -1  # sinalizador de que os dados não foram salvos corretamente
+            CallbackDataBlock.http_request_success = None
 
         return response

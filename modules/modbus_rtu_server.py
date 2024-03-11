@@ -9,11 +9,12 @@ from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server import StartSerialServer
 from pymodbus.transaction import ModbusRtuFramer
 
-from .requests import HttpRequests
+from .http_requests import HttpRequests
 from .server_callback import CallbackDataBlock
 
 
 class ModbusRtuServer:
+
     def __init__(self, port: str, baudrate=9600, num_registers=100, parity='N', bytesize=8, stopbits=1):
         self.port = port
         self.baudrate = baudrate
