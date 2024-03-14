@@ -1,5 +1,4 @@
 import asyncio
-import os
 
 from pymodbus.datastore import (
     ModbusServerContext,
@@ -9,7 +8,6 @@ from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server import StartSerialServer
 from pymodbus.transaction import ModbusRtuFramer
 
-from .http_requests import HttpRequests
 from .server_callback import CallbackDataBlock
 
 
@@ -32,14 +30,9 @@ class ModbusRtuServer:
         })
         self.server = None
 
-    async def send_data_to_api(self, address, values):
-        api_endpoint = os.environ['HOST_API_ENDPOINT']
-        req = HttpRequests(api_endpoint)
-        await req.sendData(address, values)
-
     def start_serial_server(self):
         queue = asyncio.Queue()
-        datablock = CallbackDataBlock(queue, 0x00, [0] * self.num_registers, self.send_data_to_api)
+        datablock = CallbackDataBlock(queue, 0x00, [0] * self.num_registers)
         store = ModbusSlaveContext(
             di=datablock,
             co=datablock,

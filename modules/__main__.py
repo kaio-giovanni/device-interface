@@ -15,10 +15,6 @@ if __name__ == '__main__':
 
     load_dotenv()
     port = os.environ['MODBUS_SERVER_PORT']
-    baudrate = int(os.environ['BAUDRATE'])
-    num_registers = int(os.environ['NUM_REGISTERS'])
 
-    modbusClient = ModbusRtuServer(port=port,
-                                   baudrate=baudrate,
-                                   num_registers=num_registers)
+    modbusClient = ModbusRtuServer(port=port)
     modbusClient.main()
