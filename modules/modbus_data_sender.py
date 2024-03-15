@@ -60,7 +60,7 @@ class ModbusDataSender():
     def convert_values(self, address):
         return str(self.map_values[address][0]) \
             if isinstance(self.map_values[address], list) and \
-               len(self.map_values[address]) == 1 else self.map_values
+            len(self.map_values[address]) == 1 else self.map_values
 
     def set_json_values(self):
         op = self.convert_values(3) if 3 in self.map_values else None
@@ -98,8 +98,10 @@ class ModbusDataSender():
     def check_json(self) -> bool:
         if self.json["lot"] is None:
             return False
+        elif len(self.json["lot"]) < 8:
+            return False
         for item in self.json["inputs"]:
-            if item["value"] is None:
+            if item["value"] is None or item["value"] == "0":
                 return False
         return True
 
@@ -113,7 +115,7 @@ class ModbusDataSender():
             return Utils.words_to_string(registers)
         except Exception as exc:
             self.logger.error(f"Unable to decode value from registers: {registers} - {exc}")
-            return "Invalid batch"
+            return "Batch value invalid"
 
     def done_callback(self, t):
         self.map_values.clear()
@@ -136,5 +138,7 @@ class ModbusDataSender():
                     self.logger.info("Starting a new event loop")
                     asyncio.run(self.send_data_to_api())
                     self.clear_json()
+            else:
+                self.logger.info(f"Unable to send data. JSON invalid: {self.json}")
         except Exception as exc:
             self.logger.error(f"Error while trying to process data from registers. {exc}")

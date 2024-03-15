@@ -38,7 +38,7 @@ class ModbusRtuClient:
 
     def write_registers(self, register_address, data_to_write, slave_address):
         try:
-            response = self.client.write_registers(register_address,
+            self.client.write_registers(register_address,
                                                    data_to_write,
                                                    unit=slave_address)
 
@@ -46,11 +46,6 @@ class ModbusRtuClient:
             self.logger.error(f"Received ModbusException({exc}) from library")
             self.closeConnection()
             return
-        if isinstance(rr, ExceptionResponse):
-            self.logger.error(f"Received Modbus library exception ({rr})")
-            self.closeConnection()
-        else:
-            self.logger.info("Write successfully!!")
 
     def read_from_registers(self, register_address, num_registers, slave_address):
         response = self.client.read_holding_registers(register_address,
