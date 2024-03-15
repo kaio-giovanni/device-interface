@@ -19,12 +19,15 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
     def setValues(self, address, values):
         super().setValues(address, values)
         self.logger.info(f"Callback from setValues with address {address}, values {values}")
+        if address == 1 and values == [1]:
+            self.logger.info("Receiving signal to package and send data to the API")
+            ModbusDataSender.data_is_ready = True
         self.data_sender.set_map_values(address, values)
 
     def getValues(self, address, count=1):
         response = super().getValues(address, count=count)
         self.logger.info(f"Callback from getValues with address {address}, count {count} and data {response}")
-        self.data_sender.check_values_ready()
+        self.data_sender.check_values_ready(address, response)
         return response
 
     def validate(self, address, count=1):

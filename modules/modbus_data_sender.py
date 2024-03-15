@@ -2,9 +2,6 @@ import asyncio
 import logging
 import os
 
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
-
 from .http_requests import HttpRequests
 from .utils import Utils
 
@@ -18,6 +15,7 @@ Ex: obj = ModbusDataSender.instance()
 
 class ModbusDataSender():
     _instance = None
+    data_is_ready = False
 
     def __init__(self):
 
@@ -26,23 +24,23 @@ class ModbusDataSender():
             "lot": None,
             "inputs": [
                 {
-                    "propertyName": "lot1",
+                    "propertyName": "opticalFiberExtraction",
                     "value": None
                 },
                 {
-                    "propertyName": "lot2",
+                    "propertyName": "width",
                     "value": None
                 },
                 {
-                    "propertyName": "lot3",
+                    "propertyName": "height",
                     "value": None
                 },
                 {
-                    "propertyName": "lot4",
+                    "propertyName": "bipartition",
                     "value": None
                 },
                 {
-                    "propertyName": "lot5",
+                    "propertyName": "heightnosteel",
                     "value": None
                 }
             ]
@@ -59,53 +57,68 @@ class ModbusDataSender():
     def set_map_values(self, address, value):
         self.map_values[address] = value
 
-    def set_json_values(self):
-        self.json["lot"] = self.decode_batch_value(self.map_values[6])
-        for item in self.json["inputs"]:
-            if item["propertyName"] == "lot1":
-                item["value"] = str(self.map_values[2])
-            elif item["propertyName"] == "lot2":
-                item["value"] = str(self.map_values[4])
-            elif item["propertyName"] == "lot3":
-                item["value"] = str(self.map_values[5])
-            elif item["propertyName"] == "lot4":
-                item["value"] = str(self.map_values[3])
-            elif item["propertyName"] == "lot5":
-                item["value"] = str(self.map_values[1])
+    def convert_values(self, address):
+        return str(self.map_values[address][0]) \
+            if isinstance(self.map_values[address], list) and \
+               len(self.map_values[address]) == 1 else self.map_values
 
-    def clear(self):
-        self.map_values.clear()
+    def set_json_values(self):
+        op = self.convert_values(3) if 3 in self.map_values else None
+        width = self.convert_values(5) if 5 in self.map_values else None
+        height = self.convert_values(6) if 6 in self.map_values else None
+        bipartition = self.convert_values(4) if 4 in self.map_values else None
+        heightnosteel = self.convert_values(2) if 2 in self.map_values else None
+        lot = self.map_values[7] if 7 in self.map_values else None
+        self.json["lot"] = self.decode_batch_value(lot)
+
+        for item in self.json["inputs"]:
+            if item["propertyName"] == "opticalFiberExtraction":
+                item["value"] = op
+            elif item["propertyName"] == "width":
+                item["value"] = width
+            elif item["propertyName"] == "height":
+                item["value"] = height
+            elif item["propertyName"] == "bipartition":
+                item["value"] = bipartition
+            elif item["propertyName"] == "heightnosteel":
+                item["value"] = heightnosteel
+
+    def clear_json(self):
         self.json["lot"] = None
         for item in self.json["inputs"]:
             item["value"] = None
 
-    def check_values_ready(self):  # Check if values are ready to be sent
-        if self.map_values[0] == 1:
+    def check_values_ready(self, address, values):
+        self.map_values[address] = values
+        if ModbusDataSender.data_is_ready:
             self.set_json_values()
+            self.create_task()
+            ModbusDataSender.data_is_ready = False
 
     def check_json(self) -> bool:
-        if self.json["lot"] == None:
+        if self.json["lot"] is None:
             return False
         for item in self.json["inputs"]:
-            if item["value"] == None:
+            if item["value"] is None:
                 return False
         return True
 
     async def send_data_to_api(self):
         api_endpoint = os.environ["HOST_API_ENDPOINT"]
         req = HttpRequests(api_endpoint)
-        await req.sendData(self.json)
+        return await req.send_data(self.json)
 
     def decode_batch_value(self, registers):
         try:
-            decoder = BinaryPayloadDecoder.fromRegisters(registers, Endian.Big, Endian.Big)
-            return decoder.decode_string()
+            return Utils.words_to_string(registers)
         except Exception as exc:
-            self.logger.error(f"Unable to decode value from registers: {registers}")
+            self.logger.error(f"Unable to decode value from registers: {registers} - {exc}")
             return "Invalid batch"
 
     def done_callback(self, t):
-        self.clear()
+        self.map_values.clear()
+        self.clear_json()
+        self.logger.info(f"Http callback result: {t}")
         if t.result():
             self.logger.info("API returned a success message")
         else:
@@ -122,6 +135,6 @@ class ModbusDataSender():
                 else:
                     self.logger.info("Starting a new event loop")
                     asyncio.run(self.send_data_to_api())
-                    self.clear()
+                    self.clear_json()
         except Exception as exc:
             self.logger.error(f"Error while trying to process data from registers. {exc}")

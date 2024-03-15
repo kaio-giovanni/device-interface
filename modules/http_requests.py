@@ -14,24 +14,26 @@ class HttpRequests:
         self.logger.setLevel(logging.INFO)
         self.logger.info(f"Using the API Url: {base_url}")
 
-    async def sendData(self, data) -> bool:
-        endpoint = self.base_url + "/endpoint"
+    async def send_data(self, data) -> bool:
+        endpoint = self.base_url + "/v1/items/measurements"
 
         http_response = await asyncio.to_thread(requests.post,
                                                 endpoint,
                                                 json=data,
-                                                headers={token: api_token, scope: api_scope})
+                                                headers={"token": "API_TOKEN", "scope": "API_SCOPE"})
         if http_response.ok:
             self.logger.info(f"The JSON: {data} was successfully sent to the endpoint: {self.base_url}")
             return True
         else:
             self.logger.error(
                 f"The API returned an error message when trying to send the json: {data} to endpoint {self.base_url}")
-            raise requests.exceptions.HTTPError
+            return False
 
     async def login(self, credentials):
         endpoint = "/login"
-        http_response = await asyncio.to_thread(requests.post, endpoint, json={username: "", password: ""})
+        http_response = await asyncio.to_thread(requests.post,
+                                                endpoint,
+                                                json=credentials)
 
         if http_response.ok:
             self.logger.info("Successfully logged")
