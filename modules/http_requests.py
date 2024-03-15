@@ -26,7 +26,7 @@ class HttpRequests:
             return True
         else:
             self.logger.error(
-                f"The API returned an error message when trying to send the json: {data} to endpoint {self.base_url}")
+                f"The API returned an error message: {http_response}")
             return False
 
     async def login(self, credentials):
