@@ -1,4 +1,5 @@
 import asyncio
+import struct
 
 
 class Utils:
@@ -27,3 +28,9 @@ class Utils:
             bytes_list.append(byte1)
             bytes_list.append(byte0)
         return ''.join(chr(byte) for byte in bytes_list)
+
+    @staticmethod
+    def decode_16bit_word_to_float(words):
+        t = tuple(words)
+        packed_string = struct.pack('HH', *t)
+        return struct.unpack('f', packed_string)[0]

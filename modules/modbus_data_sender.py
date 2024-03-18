@@ -58,9 +58,9 @@ class ModbusDataSender():
         self.map_values[address] = value
 
     def convert_values(self, address):
-        return str(self.map_values[address][0]) \
-            if isinstance(self.map_values[address], list) and \
-            len(self.map_values[address]) == 1 else self.map_values
+        values = self.map_values[address]
+        decoded_value = Utils.decode_16bit_word_to_float(values)
+        return str(decoded_value) if isinstance(self.map_values[address], list) else self.map_values
 
     def set_json_values(self):
         op = self.convert_values(3) if 3 in self.map_values else None
@@ -98,10 +98,8 @@ class ModbusDataSender():
     def check_json(self) -> bool:
         if self.json["lot"] is None:
             return False
-        elif len(self.json["lot"]) < 8:
-            return False
         for item in self.json["inputs"]:
-            if item["value"] is None or item["value"] == "0":
+            if item["value"] is None:
                 return False
         return True
 
