@@ -30,7 +30,7 @@ pip install -r virtualenv
 python -m virtualenv .venv
 ```
 
-- Run the following command to enter in the Python Virtual Environment
+- Run the following command to enter the Python Virtual Environment
 
 ```bash
 

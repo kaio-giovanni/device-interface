@@ -13,9 +13,8 @@ Ex: obj = ModbusDataSender.instance()
 """
 
 
-class ModbusDataSender():
+class ModbusDataSender:
     _instance = None
-    data_is_ready = False
 
     def __init__(self):
 
@@ -47,6 +46,7 @@ class ModbusDataSender():
         }
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
+        self.api_response_successful = 0
 
     @classmethod
     def instance(cls):
@@ -59,16 +59,24 @@ class ModbusDataSender():
 
     def convert_values(self, address):
         values = self.map_values[address]
-        decoded_value = Utils.decode_16bit_word_to_float(values)
-        return str(decoded_value) if isinstance(self.map_values[address], list) else self.map_values
+        if not isinstance(values, list):
+            return str(values)
+        else:
+            if len(values) == 1:
+                return str(values[0])
+            elif len(values) == 2:
+                decoded_value = Utils.decode_16bit_word_to_float(values)
+                return "{:.2f}".format(decoded_value)
+            else:
+                return str(values)
 
     def set_json_values(self):
         op = self.convert_values(3) if 3 in self.map_values else None
-        width = self.convert_values(5) if 5 in self.map_values else None
-        height = self.convert_values(6) if 6 in self.map_values else None
-        bipartition = self.convert_values(4) if 4 in self.map_values else None
+        width = self.convert_values(7) if 7 in self.map_values else None
+        height = self.convert_values(9) if 9 in self.map_values else None
+        bipartition = self.convert_values(5) if 5 in self.map_values else None
         heightnosteel = self.convert_values(2) if 2 in self.map_values else None
-        lot = self.map_values[7] if 7 in self.map_values else None
+        lot = self.map_values[17] if 17 in self.map_values else None
         self.json["lot"] = self.decode_batch_value(lot)
 
         for item in self.json["inputs"]:
@@ -88,12 +96,10 @@ class ModbusDataSender():
         for item in self.json["inputs"]:
             item["value"] = None
 
-    def check_values_ready(self, address, values):
-        self.map_values[address] = values
-        if ModbusDataSender.data_is_ready:
-            self.set_json_values()
-            self.create_task()
-            ModbusDataSender.data_is_ready = False
+    def pack_and_send_data(self):
+        self.logger.info("Packing and sending data to the API")
+        self.set_json_values()
+        self.create_task()
 
     def check_json(self) -> bool:
         if self.json["lot"] is None:
@@ -102,6 +108,14 @@ class ModbusDataSender():
             if item["value"] is None:
                 return False
         return True
+
+    def check_api_response(self):
+        self.logger.info(f"Modbus client is requesting HTTP response status: {self.api_response_successful}")
+        return self.api_response_successful
+
+    def restore_api_response_status(self):
+        self.logger.info("Resetting the API response status to default value")
+        self.api_response_successful = 0
 
     async def send_data_to_api(self):
         api_endpoint = os.environ["HOST_API_ENDPOINT"]
@@ -121,8 +135,10 @@ class ModbusDataSender():
         self.logger.info(f"Http callback result: {t}")
         if t.result():
             self.logger.info("API returned a success message")
+            self.api_response_successful = 1
         else:
             self.logger.info("API returned an unsuccessful message")
+            self.api_response_successful = -1
 
     def create_task(self):
         try:
@@ -138,5 +154,7 @@ class ModbusDataSender():
                     self.clear_json()
             else:
                 self.logger.info(f"Unable to send data. JSON invalid: {self.json}")
+                self.api_response_successful = -1
         except Exception as exc:
             self.logger.error(f"Error while trying to process data from registers. {exc}")
+            self.api_response_successful = -1
