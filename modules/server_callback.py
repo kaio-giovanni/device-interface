@@ -8,7 +8,7 @@ from .modbus_data_sender import ModbusDataSender
 
 TRIGGER_ADDRESS = 1
 TRIGGER_VALUE = [1]
-API_STATUS_ADDRESS = 0
+API_STATUS_ADDRESS = 17
 
 
 class CallbackDataBlock(ModbusSequentialDataBlock):
@@ -30,8 +30,9 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
     def getValues(self, address, count=1):
         response = super().getValues(address, count=count)
         self.data_sender.set_map_values(address, response)
-        if address == API_STATUS_ADDRESS:
-            api_response_status = self.data_sender.check_api_response()
+        api_response_status = self.data_sender.check_api_response()
+        if address == API_STATUS_ADDRESS and api_response_status != 0:
+            super().setValues(address, [api_response_status])
             response[0] = api_response_status
             self.logger.info(f"Returning HTTP response status in the address {address} with value {api_response_status}. - {response}")
             self.data_sender.restore_api_response_status()

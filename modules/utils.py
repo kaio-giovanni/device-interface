@@ -1,5 +1,7 @@
 import asyncio
 import struct
+import os
+from urllib.parse import urlparse
 
 
 class Utils:
@@ -34,3 +36,22 @@ class Utils:
         t = tuple(words)
         packed_string = struct.pack('HH', *t)
         return struct.unpack('f', packed_string)[0]
+
+    @staticmethod
+    async def ping_server(url) -> bool:
+        try:
+            hostname = urlparse(url).netloc
+            response = await os.system(f"ping -c 1 {hostname}")
+            if response == 0:
+                return True
+            else:
+                return False
+        except Exception as exc:
+            return False
+
+    @staticmethod
+    async def check_server_periodically(self):
+        response = await Utils.ping_server()
+        await asyncio.sleep(30)
+        return response
+        

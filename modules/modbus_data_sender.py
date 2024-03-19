@@ -12,6 +12,10 @@ If you want to instantiate this class, use the class method instance() instead o
 Ex: obj = ModbusDataSender.instance()
 """
 
+API_IDLE_STATUS = 0
+API_RESPONSE_SUCCESS_STATUS = 1
+API_RESPONSE_FAILED_STATUS = 2
+
 
 class ModbusDataSender:
     _instance = None
@@ -46,7 +50,8 @@ class ModbusDataSender:
         }
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
-        self.api_response_successful = 0
+        self.api_response_successful = API_IDLE_STATUS
+        self.server_api_availabillity = API_RESPONSE_SUCCESS_STATUS
 
     @classmethod
     def instance(cls):
@@ -76,7 +81,7 @@ class ModbusDataSender:
         height = self.convert_values(9) if 9 in self.map_values else None
         bipartition = self.convert_values(5) if 5 in self.map_values else None
         heightnosteel = self.convert_values(2) if 2 in self.map_values else None
-        lot = self.map_values[17] if 17 in self.map_values else None
+        lot = self.map_values[18] if 18 in self.map_values else None
         self.json["lot"] = self.decode_batch_value(lot)
 
         for item in self.json["inputs"]:
@@ -110,15 +115,17 @@ class ModbusDataSender:
         return True
 
     def check_api_response(self):
-        self.logger.info(f"Modbus client is requesting HTTP response status: {self.api_response_successful}")
         return self.api_response_successful
 
     def restore_api_response_status(self):
-        self.logger.info("Resetting the API response status to default value")
-        self.api_response_successful = 0
+        self.api_response_successful = API_IDLE_STATUS
+        self.logger.info(f"Resetting the API response status to default value: {self.api_response_successful}")
+
+    def check_server_availabillity(self):
+        return self.server_api_availabillity
 
     async def send_data_to_api(self):
-        api_endpoint = os.environ["HOST_API_ENDPOINT"]
+        api_endpoint = os.environ["API_ENDPOINT"]
         req = HttpRequests(api_endpoint)
         return await req.send_data(self.json)
 
@@ -129,16 +136,22 @@ class ModbusDataSender:
             self.logger.error(f"Unable to decode value from registers: {registers} - {exc}")
             return "Batch value invalid"
 
-    def done_callback(self, t):
+    def api_done_callback(self, t):
         self.map_values.clear()
         self.clear_json()
         self.logger.info(f"Http callback result: {t}")
         if t.result():
             self.logger.info("API returned a success message")
-            self.api_response_successful = 1
+            self.api_response_successful = API_RESPONSE_SUCCESS_STATUS
         else:
             self.logger.info("API returned an unsuccessful message")
-            self.api_response_successful = -1
+            self.api_response_successful = API_RESPONSE_FAILED_STATUS
+
+    def ping_done_callback(self, t):
+        if t.result():
+            self.server_api_availabillity = API_RESPONSE_SUCCESS_STATUS
+        else:
+            self.server_api_availabillity = API_RESPONSE_FAILED_STATUS
 
     def create_task(self):
         try:
@@ -147,14 +160,25 @@ class ModbusDataSender:
 
                 if loop and loop.is_running():
                     task = loop.create_task(self.send_data_to_api())
-                    task.add_done_callback(self.done_callback)
+                    task.add_done_callback(self.api_done_callback)
                 else:
                     self.logger.info("Starting a new event loop")
                     asyncio.run(self.send_data_to_api())
                     self.clear_json()
             else:
                 self.logger.info(f"Unable to send data. JSON invalid: {self.json}")
-                self.api_response_successful = -1
+                self.api_response_successful = API_RESPONSE_FAILED_STATUS
         except Exception as exc:
             self.logger.error(f"Error while trying to process data from registers. {exc}")
-            self.api_response_successful = -1
+            self.clear_json()
+            self.api_response_successful = API_RESPONSE_FAILED_STATUS
+
+    def create_periodic_task(self):
+        while True:
+            try:
+                if loop and loop.is_running():
+                    task = loop.create_task(Utils.check_server_periodically())
+                    task.add_done_callback(self.ping_done_callback)
+            except Exception as exc:
+                self.logger.info("The server is offline")
+                self.server_api_availabillity = API_RESPONSE_FAILED_STATUS
