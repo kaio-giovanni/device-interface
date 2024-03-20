@@ -51,7 +51,7 @@ class ModbusDataSender:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.api_response_successful = API_IDLE_STATUS
-        self.server_api_availability = API_RESPONSE_SUCCESS_STATUS
+        self.server_api_availability = 2
 
     @classmethod
     def instance(cls):
@@ -83,17 +83,17 @@ class ModbusDataSender:
             return "Batch value invalid"
 
     def set_json_values(self):
-        op = self.convert_values(3) if 3 in self.map_values else None
+        extraction = self.convert_values(3) if 3 in self.map_values else None
         width = self.convert_values(7) if 7 in self.map_values else None
         height = self.convert_values(9) if 9 in self.map_values else None
         bipartition = self.convert_values(5) if 5 in self.map_values else None
-        heightnosteel = self.convert_values(2) if 2 in self.map_values else None
-        lot = self.map_values[18] if 18 in self.map_values else None
+        heightnosteel = self.convert_values(17) if 17 in self.map_values else None
+        lot = self.map_values[19] if 19 in self.map_values else None
         self.json["lot"] = self.decode_batch_value(lot)
 
         for item in self.json["inputs"]:
             if item["propertyName"] == "opticalFiberExtraction":
-                item["value"] = op
+                item["value"] = extraction
             elif item["propertyName"] == "width":
                 item["value"] = width
             elif item["propertyName"] == "height":
@@ -122,9 +122,20 @@ class ModbusDataSender:
         self.task_send_json()
 
     async def send_data_to_api(self):
-        host_api = os.environ["HOST_API_URL"]
+        host_api = os.getenv("HOST_API_URL", "")
         req = HttpRequests(host_api)
         return await req.send_data(self.json)
+
+    async def get_api_response(self):
+        result = await self.send_data_to_api()
+        self.map_values.clear()
+        self.clear_json()
+        if result:
+            self.logger.info("API returned a success message")
+            self.api_response_successful = API_RESPONSE_SUCCESS_STATUS
+        else:
+            self.logger.info("API returned an unsuccessful message")
+            self.api_response_successful = API_RESPONSE_FAILED_STATUS
 
     def check_api_response(self):
         return self.api_response_successful
@@ -147,11 +158,14 @@ class ModbusDataSender:
             self.logger.info("API returned an unsuccessful message")
             self.api_response_successful = API_RESPONSE_FAILED_STATUS
 
-    def ping_response_callback(self, t):
-        if t.result():
-            self.server_api_availability = API_RESPONSE_SUCCESS_STATUS
-        else:
-            self.server_api_availability = API_RESPONSE_FAILED_STATUS
+    async def ping_server(self):
+        while True:
+            response = Utils.ping_server()
+            if response:
+                self.server_api_availability = 1
+            else:
+                self.server_api_availability = 0
+            await asyncio.sleep(60)
 
     def task_send_json(self):
         try:
@@ -163,7 +177,7 @@ class ModbusDataSender:
                     task.add_done_callback(self.api_response_callback)
                 else:
                     self.logger.info("Starting a new event loop")
-                    asyncio.run(self.send_data_to_api())
+                    asyncio.run(self.get_api_response())
                     self.clear_json()
             else:
                 self.logger.info(f"Unable to send data. JSON invalid: {self.json}")
@@ -178,8 +192,7 @@ class ModbusDataSender:
             loop = Utils.get_event_loop()
 
             if loop and loop.is_running():
-                task = loop.create_task(Utils.ping_server())
-                task.add_done_callback(self.ping_response_callback)
+                task = loop.create_task(self.ping_server())
         except Exception as exc:
-            self.logger.info(f"The server is offline {exc}")
-            self.server_api_availability = API_RESPONSE_FAILED_STATUS
+            self.logger.info(f"Server unreachable: {exc}")
+            self.server_api_availability = 0

@@ -14,7 +14,7 @@ if __name__ == '__main__':
     logging.info('Initializing the project...')
 
     load_dotenv()
-    port = os.environ['MODBUS_SERVER_PORT']
+    port = os.getenv('MODBUS_SERVER_PORT', "/dev/ttyUSB0")
 
     modbusClient = ModbusRtuServer(port=port)
     modbusClient.main()

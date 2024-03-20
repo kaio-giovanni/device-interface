@@ -12,12 +12,12 @@ class HttpRequests:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.logger.info(f"Using the API Url: {base_url}")
-        self.api_token = os.environ["API_TOKEN"]
-        self.api_scope = os.environ["API_SCOPE"]
+        self.api_token = os.getenv("API_TOKEN", "")
+        self.api_scope = os.getenv("API_SCOPE", "")
 
     async def send_data(self, data) -> bool:
         try:
-            endpoint = self.base_url  # + "/v1/items/measurements"
+            endpoint = self.base_url + "/v1/items/measurements"
             http_response = await asyncio.to_thread(requests.post,
                                                     endpoint,
                                                     json=data,

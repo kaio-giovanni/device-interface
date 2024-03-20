@@ -42,11 +42,9 @@ class Utils:
     @staticmethod
     def ping_server() -> bool:
         try:
-            Utils._logger.info("Pinging server...")
-            url = os.environ["HOST_API_URL"]
+            url = os.getenv("HOST_API_URL", "")
             hostname = urlparse(url).netloc
             response = os.system(f"ping -c 1 {hostname}")
-            Utils._logger.info(f"Server status: {"ONLINE" if response == 0 else "OFFLINE"})")
             if response == 0:
                 return True
             else:

@@ -8,8 +8,8 @@ from .modbus_data_sender import ModbusDataSender
 
 TRIGGER_ADDRESS = 1
 TRIGGER_VALUE = [1]
-API_RESPONSE_ADDRESS = 17
-API_STATUS_ADDRESS = 20
+API_RESPONSE_ADDRESS = 98
+API_STATUS_ADDRESS = 97
 
 
 class CallbackDataBlock(ModbusSequentialDataBlock):
@@ -34,6 +34,8 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         api_response = self.data_sender.check_api_response()
         api_status = self.data_sender.get_server_status()
 
+        if api_status == 2:
+            self.data_sender.task_check_server()
         if address == API_RESPONSE_ADDRESS and api_response != 0:
             super().setValues(address, [api_response])
             response[0] = api_response
@@ -42,7 +44,6 @@ class CallbackDataBlock(ModbusSequentialDataBlock):
         elif address == API_STATUS_ADDRESS:
             super().setValues(address, [api_status])
             response[0] = api_status
-            self.data_sender.task_check_server()
         return response
 
     def validate(self, address, count=1):
