@@ -192,7 +192,7 @@ class ModbusDataSender:
             loop = Utils.get_event_loop()
 
             if loop and loop.is_running():
-                task = loop.create_task(self.ping_server())
+                loop.create_task(self.ping_server())
         except Exception as exc:
             self.logger.info(f"Server unreachable: {exc}")
             self.server_api_availability = 0
