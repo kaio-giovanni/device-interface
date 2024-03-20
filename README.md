@@ -1,15 +1,17 @@
-# Finder Interface
+# Device Interface
 
-This is a POC demo project using Modbus RTU to connect devices (Raspberry PI and HMI - 110ws Delta).
+This project is a POC demo of using Modbus RTU to connect devices. To test it, you can use two or more devices.  
+In this project, I use a Raspberry Pi 3b+ as a Modbus slave client, to receive data from an HMI (Human-Machine Interface) Modbus master client.
+After the Modbus master client requests to write data into the registers, the Modbus slave client will get these data and send them to an external API for further processing.
 
 
-### Dependecies
+### Dependencies
 
 - Python
 
 ### Setup
 
-- Config the raspberry pi to enable serial connection:
+- Config the Raspberry Pi to enable serial connection:
 
 ```bash
 
@@ -24,7 +26,7 @@ pip install -r virtualenv
 ```
 
 - Run the following command to create a Python Virtual Environment to install packages. This command will create
-  a folder named as '.venv' with all required libraries to run the project.
+  a folder named '.venv' with all required libraries to run the project.
 
 ```bash
 python -m virtualenv .venv
@@ -61,7 +63,7 @@ type -wait [path/to/logfile.log]
 
 ```
 
-### ModBus Function codes
+### Modbus Function codes
 
 | Function Code | Register Type                    |
 |---------------|----------------------------------|
@@ -76,9 +78,10 @@ type -wait [path/to/logfile.log]
 
 ### How to run
 
-- After finishing all steps above, connect the raspberry with the HMI and run the project:
+- After finishing all the steps above, connect the raspberry with the HMI and run the project:
 
 ```bash
 
 python -m modules
 ```
+
