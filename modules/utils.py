@@ -1,10 +1,12 @@
 import asyncio
-import struct
+import logging
 import os
+import struct
 from urllib.parse import urlparse
 
 
 class Utils:
+    _logger = logging.getLogger(__name__)
 
     @staticmethod
     def get_event_loop() -> asyncio.events.AbstractEventLoop:
@@ -38,20 +40,17 @@ class Utils:
         return struct.unpack('f', packed_string)[0]
 
     @staticmethod
-    async def ping_server(url) -> bool:
+    def ping_server() -> bool:
         try:
+            Utils._logger.info("Pinging server...")
+            url = os.environ["HOST_API_URL"]
             hostname = urlparse(url).netloc
-            response = await os.system(f"ping -c 1 {hostname}")
+            response = os.system(f"ping -c 1 {hostname}")
+            Utils._logger.info(f"Server status: {"ONLINE" if response == 0 else "OFFLINE"})")
             if response == 0:
                 return True
             else:
                 return False
         except Exception as exc:
+            Utils._logger.info(f"Error trying to ping the server {exc}")
             return False
-
-    @staticmethod
-    async def check_server_periodically(self):
-        response = await Utils.ping_server()
-        await asyncio.sleep(30)
-        return response
-        

@@ -51,7 +51,7 @@ class ModbusDataSender:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.api_response_successful = API_IDLE_STATUS
-        self.server_api_availabillity = API_RESPONSE_SUCCESS_STATUS
+        self.server_api_availability = API_RESPONSE_SUCCESS_STATUS
 
     @classmethod
     def instance(cls):
@@ -74,6 +74,13 @@ class ModbusDataSender:
                 return "{:.2f}".format(decoded_value)
             else:
                 return str(values)
+
+    def decode_batch_value(self, registers):
+        try:
+            return Utils.words_to_string(registers)
+        except Exception as exc:
+            self.logger.error(f"Unable to decode value from registers: {registers} - {exc}")
+            return "Batch value invalid"
 
     def set_json_values(self):
         op = self.convert_values(3) if 3 in self.map_values else None
@@ -101,11 +108,6 @@ class ModbusDataSender:
         for item in self.json["inputs"]:
             item["value"] = None
 
-    def pack_and_send_data(self):
-        self.logger.info("Packing and sending data to the API")
-        self.set_json_values()
-        self.create_task()
-
     def check_json(self) -> bool:
         if self.json["lot"] is None:
             return False
@@ -114,6 +116,16 @@ class ModbusDataSender:
                 return False
         return True
 
+    def pack_and_send_data(self):
+        self.logger.info("Packing and sending data to the API")
+        self.set_json_values()
+        self.task_send_json()
+
+    async def send_data_to_api(self):
+        host_api = os.environ["HOST_API_URL"]
+        req = HttpRequests(host_api)
+        return await req.send_data(self.json)
+
     def check_api_response(self):
         return self.api_response_successful
 
@@ -121,22 +133,10 @@ class ModbusDataSender:
         self.api_response_successful = API_IDLE_STATUS
         self.logger.info(f"Resetting the API response status to default value: {self.api_response_successful}")
 
-    def check_server_availabillity(self):
-        return self.server_api_availabillity
+    def get_server_status(self):
+        return self.server_api_availability
 
-    async def send_data_to_api(self):
-        api_endpoint = os.environ["API_ENDPOINT"]
-        req = HttpRequests(api_endpoint)
-        return await req.send_data(self.json)
-
-    def decode_batch_value(self, registers):
-        try:
-            return Utils.words_to_string(registers)
-        except Exception as exc:
-            self.logger.error(f"Unable to decode value from registers: {registers} - {exc}")
-            return "Batch value invalid"
-
-    def api_done_callback(self, t):
+    def api_response_callback(self, t):
         self.map_values.clear()
         self.clear_json()
         self.logger.info(f"Http callback result: {t}")
@@ -147,20 +147,20 @@ class ModbusDataSender:
             self.logger.info("API returned an unsuccessful message")
             self.api_response_successful = API_RESPONSE_FAILED_STATUS
 
-    def ping_done_callback(self, t):
+    def ping_response_callback(self, t):
         if t.result():
-            self.server_api_availabillity = API_RESPONSE_SUCCESS_STATUS
+            self.server_api_availability = API_RESPONSE_SUCCESS_STATUS
         else:
-            self.server_api_availabillity = API_RESPONSE_FAILED_STATUS
+            self.server_api_availability = API_RESPONSE_FAILED_STATUS
 
-    def create_task(self):
+    def task_send_json(self):
         try:
             if self.check_json():
                 loop = Utils.get_event_loop()
 
                 if loop and loop.is_running():
                     task = loop.create_task(self.send_data_to_api())
-                    task.add_done_callback(self.api_done_callback)
+                    task.add_done_callback(self.api_response_callback)
                 else:
                     self.logger.info("Starting a new event loop")
                     asyncio.run(self.send_data_to_api())
@@ -173,12 +173,13 @@ class ModbusDataSender:
             self.clear_json()
             self.api_response_successful = API_RESPONSE_FAILED_STATUS
 
-    def create_periodic_task(self):
-        while True:
-            try:
-                if loop and loop.is_running():
-                    task = loop.create_task(Utils.check_server_periodically())
-                    task.add_done_callback(self.ping_done_callback)
-            except Exception as exc:
-                self.logger.info("The server is offline")
-                self.server_api_availabillity = API_RESPONSE_FAILED_STATUS
+    def task_check_server(self):
+        try:
+            loop = Utils.get_event_loop()
+
+            if loop and loop.is_running():
+                task = loop.create_task(Utils.ping_server())
+                task.add_done_callback(self.ping_response_callback)
+        except Exception as exc:
+            self.logger.info(f"The server is offline {exc}")
+            self.server_api_availability = API_RESPONSE_FAILED_STATUS
