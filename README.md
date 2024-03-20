@@ -18,7 +18,7 @@ After the Modbus master client requests to write data into the registers, the Mo
 sudo raspi-config
 ```
 
-- Install the virtualenv library using the package installer for Python (PIP):
+- Install the virtualenv library using the package installer for python (PIP):
 
 ```bash
 
@@ -32,7 +32,7 @@ pip install -r virtualenv
 python -m virtualenv .venv
 ```
 
-- Run the following command to enter in the Python Virtual Environment
+- Run the following command to enter the Python Virtual Environment
 
 ```bash
 
@@ -51,7 +51,7 @@ pip install --require-virtualenv -r ./requirements.txt
 
 - Create a .env file in the root folder and set the env variables according to the [env example](.env.example)
 
-- All project logs will be stored in the [logfile](./application.log). To watch a .log file in real-time, run the command below:
+- All project logs will be stored in the [logfile](./application.log) .To watch a .log file in real time, run the command bellow:
 
 ```bash
 
@@ -73,7 +73,7 @@ type -wait [path/to/logfile.log]
 | 4	            | Read Input Registers             |
 | 5	            | Write Single Coil                |
 | 6	            | Write Single Holding Register    |
-| 15	           | Write Multiple Coils             |
+| 15	           |  Write Multiple Coils            |
 | 16	           | Write Multiple Holding Registers |
 
 ### How to run

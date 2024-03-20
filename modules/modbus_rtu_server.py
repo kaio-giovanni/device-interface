@@ -1,6 +1,4 @@
 import asyncio
-import logging
-import os
 
 from pymodbus.datastore import (
     ModbusServerContext,
@@ -10,10 +8,11 @@ from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.server import StartSerialServer
 from pymodbus.transaction import ModbusRtuFramer
 
-from .requests import HttpRequests
 from .server_callback import CallbackDataBlock
 
+
 class ModbusRtuServer:
+
     def __init__(self, port: str, baudrate=9600, num_registers=100, parity='N', bytesize=8, stopbits=1):
         self.port = port
         self.baudrate = baudrate
@@ -21,25 +20,19 @@ class ModbusRtuServer:
         self.parity = parity
         self.bytesize = bytesize
         self.stopbits = stopbits
-        self.logger = logging.getLogger(__name__)
         self.server_identity = ModbusDeviceIdentification(info_name={
-            "VendorName": "Raspberry Foundation",
-            "ProductCode": "Raspberry PI 3b+",
-            "VendorUrl": "https://raspberry.org",
-            "ProductName": 'Raspberry PI',
-            "ModelName": 'Raspberry PI 3b+',
+            "VendorName": "Revolution PI",
+            "ProductCode": "RevPi Connect SE",
+            "VendorUrl": "https://revolutionpi.com/shop/en/revpi-connect-se",
+            "ProductName": 'RevPi Connect SE',
+            "ModelName": 'RevPi Connect SE',
             "MajorMinorRevision": '1.0.0',
         })
         self.server = None
 
-    async def send_data_to_api(self, address, values):
-        api_endpoint = os.environ['HOST_API_ENDPOINT']
-        req = HttpRequests(api_endpoint)
-        await req.sendData(address, values)
-
     def start_serial_server(self):
         queue = asyncio.Queue()
-        datablock = CallbackDataBlock(queue, 0x00, [0] * self.num_registers, self.send_data_to_api)
+        datablock = CallbackDataBlock(queue, 0x00, [0] * self.num_registers)
         store = ModbusSlaveContext(
             di=datablock,
             co=datablock,

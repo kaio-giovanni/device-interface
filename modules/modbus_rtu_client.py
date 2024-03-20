@@ -16,7 +16,7 @@ class ModbusRtuClient:
         self.logger = logging.getLogger(__name__)
         self.client = None
 
-    def startConnection(self) -> bool:
+    def start_connection(self) -> bool:
         self.logger.info('Connecting to the server...')
         self.client = modbusClient.AsyncModbusSerialClient(
             port=self.port,
@@ -32,25 +32,20 @@ class ModbusRtuClient:
         self.client.connect()
         return self.client.connected
 
-    def closeConnection(self):
+    def close_connection(self):
         self.logger.info('Closing the connection...')
         self.client.close()
 
     def write_registers(self, register_address, data_to_write, slave_address):
         try:
-            response = self.client.write_registers(register_address,
-                                                   data_to_write,
-                                                   unit=slave_address)
+            self.client.write_registers(register_address,
+                                        data_to_write,
+                                        unit=slave_address)
 
         except ModbusException as exc:
             self.logger.error(f"Received ModbusException({exc}) from library")
-            self.closeConnection()
+            self.close_connection()
             return
-        if isinstance(rr, ExceptionResponse):
-            self.logger.error(f"Received Modbus library exception ({rr})")
-            self.closeConnection()
-        else:
-            self.logger.info("Write successfully!!")
 
     def read_from_registers(self, register_address, num_registers, slave_address):
         response = self.client.read_holding_registers(register_address,
@@ -60,4 +55,3 @@ class ModbusRtuClient:
             self.logger.info("Read successful:", response.registers)
         else:
             self.logger.error("Error reading registers:", response)
-
